@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>mydentist Yorkshire &amp; Humber — Opportunity Map</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+  :root{
+    --ink:#1b2430;
+    --paper:#f6f4ee;
+    --panel:#ffffff;
+    --line:#dedad0;
+    --red:#c1443a;
+    --amber:#c98a2c;
+    --green:#3f7a5a;
+    --muted:#6b7280;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:'Georgia','Iowan Old Style',serif;
+    background:var(--paper);
+    color:var(--ink);
+  }
+  header{
+    padding:28px 32px 18px;
+    border-bottom:1px solid var(--line);
+    background:var(--panel);
+  }
+  header h1{
+    margin:0 0 6px;
+    font-size:1.5rem;
+    font-weight:600;
+    letter-spacing:-0.01em;
+  }
+  header p{
+    margin:0;
+    font-family:'Helvetica Neue',Arial,sans-serif;
+    font-size:0.9rem;
+    color:var(--muted);
+    max-width:70ch;
+    line-height:1.5;
+  }
+  .layout{
+    display:flex;
+    height:calc(100vh - 108px);
+    min-height:520px;
+  }
+  #map{
+    flex:1 1 auto;
+    height:100%;
+  }
+  .sidebar{
+    width:300px;
+    flex:0 0 300px;
+    background:var(--panel);
+    border-left:1px solid var(--line);
+    padding:20px;
+    overflow-y:auto;
+    font-family:'Helvetica Neue',Arial,sans-serif;
+  }
+  .sidebar h2{
+    font-family:Georgia,serif;
+    font-size:1rem;
+    margin:0 0 12px;
+  }
+  .legend-item{
+    display:flex;
+    align-items:flex-start;
+    gap:10px;
+    margin-bottom:14px;
+    font-size:0.82rem;
+    line-height:1.4;
+  }
+  .dot{
+    width:14px;height:14px;border-radius:50%;
+    flex:0 0 14px;
+    margin-top:2px;
+    box-shadow:0 0 0 2px rgba(0,0,0,0.06);
+  }
+  .dot.red{background:var(--red);}
+  .dot.amber{background:var(--amber);}
+  .dot.green{background:var(--green);}
+  .legend-item b{display:block;margin-bottom:2px;}
+  .legend-item span{color:var(--muted);}
+  .sources{
+    margin-top:24px;
+    padding-top:16px;
+    border-top:1px solid var(--line);
+    font-size:0.72rem;
+    color:var(--muted);
+    line-height:1.6;
+  }
+  .sources a{color:var(--muted);}
+  .leaflet-popup-content{
+    font-family:'Helvetica Neue',Arial,sans-serif;
+    font-size:0.82rem;
+    line-height:1.5;
+    min-width:220px;
+  }
+  .leaflet-popup-content h3{
+    font-family:Georgia,serif;
+    margin:0 0 6px;
+    font-size:0.95rem;
+  }
+  .leaflet-popup-content table{
+    width:100%;
+    border-collapse:collapse;
+    margin-top:6px;
+  }
+  .leaflet-popup-content td{
+    padding:2px 0;
+    border-bottom:1px dotted var(--line);
+  }
+  .leaflet-popup-content td.k{color:var(--muted);}
+  .leaflet-popup-content td.v{text-align:right;font-weight:600;}
+  .tag{
+    display:inline-block;
+    font-size:0.68rem;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:0.03em;
+    padding:2px 7px;
+    border-radius:3px;
+    margin-bottom:6px;
+  }
+  .tag.red{background:#f6dedb;color:var(--red);}
+  .tag.amber{background:#f6e6cd;color:var(--amber);}
+  .tag.green{background:#dcece2;color:var(--green);}
+  @media (max-width: 760px){
+    .layout{flex-direction:column;height:auto;}
+    #map{height:60vh;}
+    .sidebar{width:auto;flex:1 1 auto;border-left:none;border-top:1px solid var(--line);}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>mydentist Yorkshire &amp; Humber — Opportunity Map</h1>
+  <p>Three data layers combined per local authority: child dental need (NDEP oral health survey 2023/24), mydentist practice capacity per capita, and NHS access (% adults seen by an NHS dentist in the last 24 months, NHSBSA 2024/25). Click any marker for the full breakdown.</p>
+</header>
+
+<div class="layout">
+  <div id="map"></div>
+  <div class="sidebar">
+    <h2>Legend</h2>
+    <div class="legend-item">
+      <div class="dot red"></div>
+      <div><b>Priority opportunity</b><span>Poor on need, capacity and/or access — strongest case for investment.</span></div>
+    </div>
+    <div class="legend-item">
+      <div class="dot amber"></div>
+      <div><b>Mixed / data gap</b><span>Strong signal on one or two measures, but a data gap (usually no oral health survey participation) prevents a full picture.</span></div>
+    </div>
+    <div class="legend-item">
+      <div class="dot green"></div>
+      <div><b>Well served</b><span>Adequate or above-average across the measures we have data for.</span></div>
+    </div>
+    <div class="sources">
+      Sources: NHSBSA Dental Statistics England 2024/25 (patients seen, geographical aggregations); OHID National Dental Epidemiology Programme, oral health survey of 5-year-old schoolchildren 2023/24; mydentist practice locator (mydentist.co.uk), scraped July 2026; ONS Census 2021 (population estimates). Practices-per-capita uses 5-year-old population as a consistent cross-area proxy, not a literal patient denominator. Four local authorities (East Riding, North Yorkshire, Wakefield, York) did not participate in the 2023/24 oral health survey, so decay figures are unavailable for them.
+    </div>
+  </div>
+</div>
+
+<script>
+const data = [
+  {name:"Bradford", lat:53.7945136, lng:-1.7497442, tier:"red",
+   tag:"Priority opportunity",
+   rows:[["Practices","7"],["Child decay","37.1% (worst)"],["Practices / 1,000 5yo","0.92"],["Adults seen (24mo)","41.6%"],["Verdict","Worst on need, capacity and access"]]},
+  {name:"Hull (Kingston upon Hull)", lat:53.7453387, lng:-0.3391723, tier:"amber",
+   tag:"High need, mid access",
+   rows:[["Practices","3"],["Child decay","34.4% (2nd worst)"],["Practices / 1,000 5yo","0.89"],["Adults seen (24mo)","49.7%"],["Verdict","High need but access close to average"]]},
+  {name:"East Riding of Yorkshire", lat:53.841963, lng:-0.435093, tier:"amber",
+   tag:"Worst access, need unknown",
+   rows:[["Practices","4"],["Child decay","No survey data"],["Practices / 1,000 5yo","1.19"],["Adults seen (24mo)","35.2% (worst)"],["Verdict","Confirmed access gap, need signal missing"]]},
+  {name:"York", lat:53.9603119, lng:-1.0804547, tier:"amber",
+   tag:"2nd worst access, need unknown",
+   rows:[["Practices","2"],["Child decay","No survey data"],["Practices / 1,000 5yo","1.11"],["Adults seen (24mo)","36.8%"],["Children seen (12mo)","76.8% (2nd best)"],["Verdict","Adults underserved, children not"]]},
+  {name:"North Yorkshire (Filey / Knaresborough / Scarborough)", lat:54.3377838, lng:-1.4310027, tier:"amber",
+   tag:"Low density, need unknown",
+   rows:[["Practices","3"],["Child decay","No survey data"],["Practices / 1,000 5yo","0.50 (very low)"],["Adults seen (24mo)","41.0%"],["Verdict","Low capacity, need signal missing"]]},
+  {name:"Wakefield", lat:53.6848162, lng:-1.5038596, tier:"amber",
+   tag:"Lowest capacity ratio, need unknown",
+   rows:[["Practices","2"],["Child decay","No survey data"],["Practices / 1,000 5yo","0.48 (lowest)"],["Adults seen (24mo)","50.5%"],["Verdict","Low capacity but near-average access"]]},
+  {name:"Grimsby (North East Lincolnshire)", lat:53.567471, lng:-0.080784, tier:"amber",
+   tag:"Moderate need",
+   rows:[["Practices","2"],["Child decay","30.7%"],["Practices / 1,000 5yo","1.08"],["Adults seen (24mo)","47.3%"],["Verdict","Moderate need, near-average access"]]},
+  {name:"Barnsley", lat:53.55263, lng:-1.479726, tier:"amber",
+   tag:"Moderate need",
+   rows:[["Practices","3"],["Child decay","30.2%"],["Practices / 1,000 5yo","1.05"],["Adults seen (24mo)","50.8%"],["Verdict","Moderate need, near-average access"]]},
+  {name:"Rotherham", lat:53.4326035, lng:-1.3635009, tier:"green",
+   tag:"Well served",
+   rows:[["Practices","5"],["Child decay","23.5%"],["Practices / 1,000 5yo","1.57"],["Adults seen (24mo)","52.5%"],["Verdict","Below-average need, good capacity"]]},
+  {name:"Leeds", lat:53.7995746, lng:-1.5471022, tier:"green",
+   tag:"Low density but low need",
+   rows:[["Practices","6"],["Child decay","21.9% (best)"],["Practices / 1,000 5yo","0.61"],["Adults seen (24mo)","40.4%"],["Verdict","Low ratio offset by lowest need in region"]]},
+  {name:"Doncaster", lat:53.5227501, lng:-1.132336, tier:"green",
+   tag:"Well served",
+   rows:[["Practices","6"],["Child decay","25.4%"],["Practices / 1,000 5yo","1.73 (best)"],["Adults seen (24mo)","53.2%"],["Verdict","Best capacity ratio in region"]]},
+  {name:"Sheffield", lat:53.3779814, lng:-1.4717825, tier:"green",
+   tag:"Well served",
+   rows:[["Practices","9 (most in region)"],["Child decay","28.5%"],["Practices / 1,000 5yo","1.40"],["Adults seen (24mo)","59.4% (best)"],["Verdict","Best access in region"]]},
+  {name:"Redcar and Cleveland", lat:54.5974636, lng:-1.0779515, tier:"green",
+   tag:"Low density, well served",
+   rows:[["Practices","1"],["Child decay","24.3%"],["Practices / 1,000 5yo","0.66"],["Adults seen (24mo)","65.5% (best by far)"],["Verdict","Low mydentist density offset by other providers"]]},
+];
+
+const colors = {red:"#c1443a", amber:"#c98a2c", green:"#3f7a5a"};
+
+const map = L.map('map', {scrollWheelZoom:true}).setView([53.75,-1.15], 8);
+
+L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+  maxZoom: 19
+}).addTo(map);
+
+data.forEach(d => {
+  const marker = L.circleMarker([d.lat, d.lng], {
+    radius: 10,
+    fillColor: colors[d.tier],
+    color: "#ffffff",
+    weight: 2,
+    fillOpacity: 0.9
+  }).addTo(map);
+
+  const rowsHtml = d.rows.map(r => `<tr><td class="k">${r[0]}</td><td class="v">${r[1]}</td></tr>`).join('');
+  const popupHtml = `
+    <span class="tag ${d.tier}">${d.tag}</span>
+    <h3>${d.name}</h3>
+    <table>${rowsHtml}</table>
+  `;
+  marker.bindPopup(popupHtml, {maxWidth: 280});
+});
+</script>
+
+</body>
+</html>
